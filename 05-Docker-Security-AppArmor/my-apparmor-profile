@@ -1,0 +1,60 @@
+#include <tunables/global>
+
+# Install to /etc/apparmor.d/my-apparmor-profile and load with:
+#   sudo apparmor_parser -r /etc/apparmor.d/my-apparmor-profile
+#
+# The lab sheet declares the profile as "/usr/bin/python3 { ... }". Docker's
+# --security-opt apparmor=<name> looks a profile up by NAME, so the profile is
+# declared with the explicit name "my-apparmor-profile". All restrictions from
+# the lab sheet are kept; the minimum allow rules needed for the python:3.8-slim
+# interpreter (which lives in /usr/local, not /usr/bin) to start are added.
+
+profile my-apparmor-profile flags=(attach_disconnected,mediate_deleted) {
+    #include <abstractions/base>
+
+    # ---- Lab-sheet restrictions -------------------------------------------
+    # Deny access to sensitive system files
+    deny /etc/** r,
+    deny /var/** rw,
+
+    # Allow Flask app to bind to port 5000
+    network inet stream,
+    network inet6 stream,
+
+    # Permissions to the application directory
+    /app/** rwk,
+    /app/ r,
+
+    # Deny execution of any binaries in /bin or /usr/bin (also /sbin)
+    deny /bin/** rmix,
+    deny /usr/bin/** rmix,
+    deny /sbin/** rmix,
+    deny /usr/sbin/** rmix,
+
+    # Capability restrictions
+    capability net_bind_service,
+    deny capability sys_admin,
+
+    # ---- Minimum runtime needs of the Python interpreter ------------------
+    /usr/local/bin/** ix,
+    /usr/local/lib/** rm,
+    /usr/lib/** rm,
+    /lib/** rm,
+    /usr/share/** r,
+    /tmp/** rwk,
+    /proc/** r,
+    /sys/fs/cgroup/** r,
+    /dev/null rw,
+    /dev/urandom r,
+    /dev/pts/* rw,
+
+    # Hardening (similar to docker-default)
+    deny mount,
+    deny umount,
+    deny /proc/sys/kernel/** w,
+    deny /sys/[^f]** w,
+
+    # Let dockerd (unconfined) stop the container; allow intra-profile signals
+    signal (receive) peer=unconfined,
+    signal (send,receive) peer=my-apparmor-profile,
+}
