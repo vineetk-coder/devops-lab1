@@ -1,0 +1,36 @@
+{
+  "uid": "delivery-monitoring",
+  "title": "Delivery Monitoring",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Total Deliveries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-delivery" },
+      "targets": [ { "refId": "A", "expr": "total_deliveries", "datasource": { "type": "prometheus", "uid": "prometheus-delivery" } } ]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Pending Deliveries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-delivery" },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 10 } ] } }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "pending_deliveries", "datasource": { "type": "prometheus", "uid": "prometheus-delivery" } } ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "On-the-Way Deliveries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-delivery" },
+      "targets": [ { "refId": "A", "expr": "on_the_way_deliveries", "datasource": { "type": "prometheus", "uid": "prometheus-delivery" } } ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Average Delivery Time (s)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus-delivery" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [ { "refId": "A", "expr": "average_delivery_time_sum / average_delivery_time_count", "datasource": { "type": "prometheus", "uid": "prometheus-delivery" } } ]
+    }
+  ]
+}
