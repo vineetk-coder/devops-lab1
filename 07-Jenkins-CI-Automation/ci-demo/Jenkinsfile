@@ -1,0 +1,28 @@
+// CI workflow from the lab sheet: code change -> automated build -> automated test -> feedback
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                // With "Pipeline script from SCM" Jenkins has already checked out the repo
+                sh 'ls -la'
+            }
+        }
+        stage('Build') {
+            steps {
+                // "Build" for Python = byte-compile; fails on any syntax error
+                sh 'python3 -m py_compile calculator.py test_calculator.py'
+            }
+        }
+        stage('Test') {
+            steps {
+                // Non-zero exit on any failing test => stage and pipeline fail
+                sh 'python3 -m unittest -v test_calculator.py'
+            }
+        }
+    }
+    post {
+        success { echo 'CI feedback: build and tests PASSED' }
+        failure { echo 'CI feedback: build or tests FAILED - check the console log' }
+    }
+}
