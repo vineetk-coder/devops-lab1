@@ -1,0 +1,33 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<!-- Freestyle job "HelloWorld" equivalent to the UI steps in the lab sheet.
+     Replace the repository URL with your own devops-sample-code repo.
+     Import: java -jar jenkins-cli.jar -s http://localhost:8080/ -auth admin:TOKEN create-job HelloWorld < job-config.xml -->
+<project>
+  <description>Hello World! Jenkins job.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/YOUR-GITHUB-USERNAME/devops-sample-code.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/main</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>sh hello-world.sh</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
