@@ -1,0 +1,80 @@
+pipeline {
+    agent any
+
+    environment {
+        VENV = "${WORKSPACE}/venv"
+        DEPLOY_DIR = "${WORKSPACE}/python-app-deploy"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Creating virtual environment and installing dependencies...'
+                sh '''
+                python3 -m venv ${VENV}
+                ${VENV}/bin/pip install --upgrade pip
+                ${VENV}/bin/pip install -r requirements.txt
+                '''
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Running tests...'
+                // unittest exits non-zero on failure -> the pipeline fails here
+                sh '${VENV}/bin/python -m unittest discover -s . -p "test_*.py" -v'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying application...'
+                sh '''
+                mkdir -p ${DEPLOY_DIR}
+                cp ${WORKSPACE}/app.py ${DEPLOY_DIR}/
+                '''
+            }
+        }
+        stage('Run Application') {
+            steps {
+                echo 'Running application...'
+                // JENKINS_NODE_COOKIE=dontKillMe stops Jenkins from killing the
+                // background server when this sh step ends.
+                sh '''
+                if [ -f ${DEPLOY_DIR}/app.pid ]; then kill $(cat ${DEPLOY_DIR}/app.pid) 2>/dev/null || true; fi
+                JENKINS_NODE_COOKIE=dontKillMe nohup ${VENV}/bin/python ${DEPLOY_DIR}/app.py > ${DEPLOY_DIR}/app.log 2>&1 &
+                echo $! > ${DEPLOY_DIR}/app.pid
+                sleep 3
+                '''
+            }
+        }
+        stage('Test Application') {
+            steps {
+                echo 'Testing application...'
+                sh '''
+                ${VENV}/bin/python ${WORKSPACE}/test_app.py
+                # Verify the deployed, running server responds on port 5000
+                ${VENV}/bin/python - <<'EOF'
+import sys, time, urllib.request
+for _ in range(10):
+    try:
+        body = urllib.request.urlopen("http://127.0.0.1:5000/", timeout=3).read().decode()
+        print("Live response:", body)
+        sys.exit(0 if body == "Hello, Jenkins Multi-Stage Pipeline!" else 1)
+    except Exception as e:
+        print("waiting for app...", e); time.sleep(1)
+sys.exit(1)
+EOF
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs for more details.'
+            sh 'cat ${DEPLOY_DIR}/app.log 2>/dev/null || true'
+        }
+    }
+}
